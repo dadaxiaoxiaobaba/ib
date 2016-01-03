@@ -1,0 +1,62 @@
+{
+  "name": "ibapi",
+  "version": "0.1.23",
+  "description": "Interactive Brokers API addon for NodeJS ",
+  "main": "ibapi.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha",
+    "preinstall": "sh preinstall.sh",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dchem/node-ibapi-addon.git"
+  },
+  "keywords": [
+    "interactive",
+    "brokers",
+    "tws",
+    "twsapi",
+    "ib",
+    "finance",
+    "stock",
+    "bond",
+    "option",
+    "forex",
+    "future",
+    "ticker",
+    "symbol",
+    "quote",
+    "market",
+    "data",
+    "automated",
+    "invest",
+    "trade",
+    "trading",
+    "system",
+    "api",
+    "client",
+    "library"
+  ],
+  "author": {
+    "name": "Jae Yang",
+    "email": "jaey226@gmail.com"
+  },
+  "license": "MIT",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/dchem/node-ibapi-addon/issues"
+  },
+  "readme": "node-ibapi-addon\n================\n\nInteractive Brokers API addon for Node.js compatible with IB API 9.71\n\nThis addon uses the latest stable Interactive Brokers POSIX C++ API.\n\nAuthor: Jae Yang - [dchem] (https://github.com/dchem/)\n\nFor direct JavaScript implementation of IB API for Node.js, please visit Pilwon Huh's [node-ib] (https://github.com/pilwon/node-ib).\n\n### Important\nDEPRECATED: calling NodeIbapi() directly from package is being deprecated. \nPlease call it from 'addon'. See barebones.js in examples folder.\n\n### Change Notes:\n\n* 2014-11-12 - 0.1.23 - Includes lib into the package itself\n* 2014-09-10 - 0.1.21 - Supports API 9.71\n* 2014-09-09 - 0.1.19 - Adds order.js and placeOrder can use order obj\n* 2014-04-22 - 0.1.17 - Compatibility fix for API 9.70\n* 2014-03-17 - 0.1.13 - Smoother installation to multiple OSes\n* 2014-01-17 - 0.1.0  - all EWrapper events bound in ibapi.js\n* 2014-01-09 - 0.0.4  - get commands output JS objects\n* 2013-12-29 - 0.0.3  - Added EventEmitter support\n* 2013-09-26 - 0.0.2  - EClientSocket hooks and EWrapper hooks\n* 2013-09-02 - 0.0.1  - Initial commit - connect, disconnect, isConnected works\n\n### Installation dependency\n* Install Python 2.7\n* Install node-gyp\n```\nnpm install node-gyp -g\n```\n* Install unzip if Linux\n```\nsudo apt-get install unzip\n```\n\n### Additional installation dependency for Windows:\n* Install MinGW\n* Install msys-unzip instead of unzip\n* Install msys-wget\n```\nmingw-get install msys-unzip\nmingw-get install msys-wget\n```\n* Install Microsoft Visual Studio\n\n### Installation from NPM:\n```\nnpm install ibapi\n```\n\nFor Windows with MSVS 2013:\n```\nnpm install ibapi --msvs_version=2013\n```\n\nFor Windows with MSVS 2012:\n```\nnpm install ibapi --msvs_version=2012\n```\nAlternatively, include GYP_MSVS_VERSION=2012 or GYP_MSVS_VERSION=2013 in \nenvironment variables for Windows.\n\n### Additional installation dependency for OS X:\n* Install xcode command line tools\n* Install homebrew\n* Install wget through homebrew\n\n### Installation from git repo:\n\n1. Make sure to have node-gyp installed\n2. Run the preinstall.sh which does the following:\n * Download the latest stable IB API into /import\n * Copy the contents of IB API package's \n    IBJts/source/PosixClient/Shared into /import directory\n * Copy the contents of IB API package's\n    IBJts/source/PosixClient/src into /import directory\n * Add #define IB_USE_STD_STRING into the following files in /import directory:\n    EClientSocketBase.cpp\n    EPosixClientSocket.cpp\n3. ```node-gyp rebuild```\n4. If build fails because you have VS2012, use ```node-gyp --msvs_version=2012 rebuild```\n\n### Usage\n1. Require ibapi\n2. Create a client\n3. Bind processIbMsg to setInterval\n4. Bind doReqFunc to setInterval once nextValidId is received\n5. Define what happens in the callbacks for each events\n6. Push request functions to function queue funcQueue\n7. Invoke connectToIb\n8. ...\n9. Profit!\n\n```js\nvar ibapi = require('ibapi');             // 1. Require ibapi\nvar client = new ibapi.addon.NodeIbapi(); // 2. Create client\n\nvar orderId = -1;\nvar processIbMsg = function () {\n  client.processIbMsg();\n}\nvar addReqId = function () {\n  client.addReqId(1);\n}\nvar doReqFunc = function () {\n  client.doReqFunc();\n}\nclient.on('connected', function () {\n  console.log('connected');\n  setInterval(processIbMsg,0.1);          // 3. Bind processIbMsg\n  client.funcQueue.push(addReqId);\n\n})\n.once('nextValidId', function (data) {\n  console.log('Server version ' + client.serverVersion().toString() );\n  orderId = data.orderId;\n  console.log('nextValidId: ' + orderId);\n  console.log( client.twsConnectionTime() );\n  setInterval(doReqFunc,100);             // 4. Bind doReqFunc\n})                                        // 5. Bind callbacks to events\n.on('clientError', function (clientError) {\n  console.log('Client error' + clientError.id.toString());\n})\n.on('svrError', function (svrError) {\n  console.log('Error: ' + svrError.id.toString() + ' - ' + \n    svrError.errorCode.toString() + ' - ' + svrError.errorString.toString());\n})\n.on('disconnected', function () {\n  console.log('disconnected');\n  process.exit(1);\n})\n\nclient.connectToIb('127.0.0.1',7496,0);   // 7. Connect to IB\n```\n### Included libraries\n* order\n* contract\n* execution\n* scannerSubscription\n* contractDetails\n\n### Module Wrapper Commands\nThe following commands are extended commands in ibapi.js.\n```js\n.addReqId()     // requests nextValidId, wraps reqIds(1)\n.doReqFunc()    // runs request functions in a function queue\n.processIbMsg() // processes incoming and outgoing messages\n.connectToIb()  // connects to IB and returns a connected or connectionFail event\n```\n### Client methods\n```js\n// Msg processor\n//  a POSIX implementation of network message handler\n.processMsg()\n\n// IB API Commands\n//  Following commands are used for requesting specific action \n//  through IB API\n//  Whenever you need to input contract, it must be js object contract see\n//  lib/contract.js\n//  Likewise, for scanner subscription, see lib/scannerSubscription.js\n\n.connect(host,port,clientId)\n.disconnect()\n.isConnected()\n.serverVersion() // returns right away\n.twsConnectionTime() // returns right away\n.reqMktData(reqId, contract, genericTickType, snapShot)\n.cancelMktData(reqId)\n// placeOrder can take either \n.placeOrder(orderId, contrct, order)\n// or\n.placeOrder(orderId, contract, action, quantity, orderType, price, auxPrice)\n.cancelOrder(orderId)\n.reqOpenOrders()\n.reqAccountUpdates(subscribe, acctCode)\n.reqExecutions(reqId, clientId, acctCode, time, symbol, secType, exchange, side)\n.reqIds(1)\n.checkMessages()\n.reqContractDetails(reqId, contract)\n.reqMktDepth(tickerId, contract, numRows ) \n.cancelMktDepth(tickerId)\n.reqNewsBulletins(allMsgs)\n.cancelNewsBulletins()\n.setServerLogLevel(level)\n.reqAutoOpenOrders(bAutoBind)\n.reqAllOpenOrders()\n.reqManagedAccts()\n.requestFA( ) // not yet implemented\n.replaceFA( ) // not yet implemented\n.reqHistoricalData(id, contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, formatDate)\n.exerciseOptions(tickerId, contract, exerciseAction, exerciseQuantity, account, override )\n.cancelHistoricalData(tickerId)\n.reqRealtimeBars(tickerId, contract, barSize, whatToShow, useRTH)\n.cancelRealTimeBars(tickerId)\n.cancelScannerSubscription(tickerId)\n.reqScannerParameters()\n.reqScannerSubscription(tickerId, subscription)\n.reqCurrentTime() // not implemented\n.reqFundamentalData( reqId, contract, reportType )\n.cancelFundamentalData(reqId)\n.calculateImpliedVolatility( reqId, contract, optionPrice, underPrice )\n.calculateOptionPrice( reqId, contract, volatility, underPrice )\n.cancelCalculateImpliedVolatility(reqId)\n.cancelCalculateOptionPrice(reqId)\n.reqGlobalCancel()\n.reqMarketDataType(marketDataType)\n.reqPositions()\n.cancelPositions()\n.reqAccountSummary( reqId, groupName, tags )\n.cancelAccountSummary(reqId)\n.verifyRequest( apiName, apiVersion )\n.verifyMessage( apiData )\n.queryDisplayGroups( reqId )\n.subscribeToGroupEvents( reqId, groupId )\n.updateDisplayGroup( reqId, contractInfo )\n.unsubscribeFromGroupEvents( reqId )\n```\n\n### EWrapper Events\n```js\n// processIbMsg events - returns arrays\n.on('tickPrice', function( tickPrice ) )\n.on('tickSize', function( tickSize ) )\n.on('tickOptionComputation', function( tickOptionComputation ) )\n.on('tickGeneric', function( tickGeneric ) )\n.on('tickString', function( tickString ) )\n.on('tickEFP', function( tickEFP ) )\n.on('orderStatus', function( orderStatus ) )\n.on('openOrder', function( openOrder ) )\n.on('openOrderEnd', function( openOrderEnd ) )\n.on('clientError', function( clientError ) )\n.on('connectionClosed', function( connectionClosed ) )\n.on('updateAccountValue', function( updateAccountValue ) )\n.on('updatePortfolio', function( updatePortfolio ) )\n.on('updateAccountTime', function( updateAccountTime ) )\n.on('accountDownloadEnd', function( accountDownloadEnd ) )\n.on('nextValidId', function( nextValidId ) )\n.on('contractDetails', function( contractDetails ) )\n.on('bondContractDetails', function( bondContractDetails ) )\n.on('contractDetailsEnd', function( contractDetailsEnd ) )\n.on('execDetails', function( execDetails ) )\n.on('execDetailsEnd', function( execDetailsEnd ) )\n.on('svrError', function( svrError ) )\n.on('updateMktDepth', function( updateMktDepth ) )\n.on('updateMktDepthL2', function( updateMktDepthL2 ) )\n.on('updateNewsBulletin', function( updateNewsBulletin ) )\n.on('managedAccounts', function( managedAccounts ) )\n.on('receiveFA', function( receiveFA ) )\n.on('historicalData', function( historicalData ) )\n.on('scannerParameters', function( scannerParameters ) )\n.on('scannerData', function( scannerData ) )\n.on('scannerDataEnd', function( scannerDataEnd ) )\n.on('realtimeBar', function( realtimeBar ) )\n.on('fundamentalData', function( fundamentalData ) )\n.on('deltaNeutralValidation', function( deltaNeutralValidation ) )\n.on('tickSnapshotEnd', function( tickSnapshotEnd ) )\n.on('marketDataType', function( marketDataType ) )\n.on('commissionReport', function( commissionReport ) )\n.on('position', function( position ) )\n.on('positionEnd', function( positionEnd ) )\n.on('accountSummary', function( accountSummary ) )\n.on('accountSummaryEnd', function( accountSummaryEnd ) )\n.on('verifyMessageAPI', function( verifyMessageAPI ) )\n.on('verifyCompleted', function( verifyCompleted ) )\n.on('displayGroupList', function( displayGroupList ) )\n.on('displayGroupUpdated', function( displayGroupUpdated ) )\n.on('nextValidId', function( nextValidId ) )\n\n.on('disconnected', function ())\n\n// connectToIb events\n.on('connected', function())\n.on('connectionFail' function())\n```\n\n### Tests:\nUses mocha, so install it.\n\n### Issues:\n* See issues list in https://github.com/dchem/node-ibapi-addon/issues?state=open\n\n### License\nCopyright (c) 2014 Jae Yang. See LICENSE file for license rights and limitations (MIT).\n",
+  "readmeFilename": "README.md",
+  "homepage": "https://github.com/dchem/node-ibapi-addon",
+  "_id": "ibapi@0.1.23",
+  "dist": {
+    "shasum": "d6deedd7027ec575a05bf986326acacaa445a92d"
+  },
+  "_from": "ibapi@0.1.23",
+  "_resolved": "https://registry.npmjs.org/ibapi/-/ibapi-0.1.23.tgz"
+}
